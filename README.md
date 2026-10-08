@@ -35,8 +35,7 @@ All website text (English and Hindi) is in `src/i18n.js`.
 
 ## Connect the enquiry form to Google Sheets
 
-1. Go to https://sheets.google.com and create a new blank sheet,
-   e.g. "JH Enquiries".
+1. Open the **JH** Google Sheet (ID `1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw`).
 2. In the sheet click **Extensions → Apps Script**.
 3. Delete the code you see, and paste everything from
    `google-apps-script/Code.gs`. Click **Save** (💾).
@@ -56,8 +55,8 @@ All website text (English and Hindi) is in `src/i18n.js`.
    ```
 
 8. Submit a test enquiry on the website. A new row appears in the
-   **Enquiries** tab of your sheet, and you get an email at jh749910@gmail.com.
-   (To stop emails, set `NOTIFY_EMAIL = ''` in the script.)
+   **JH** tab of the sheet, and an email goes to sirajul.mondal.tech@gmail.com.
+   (Change `NOTIFY_EMAIL` in the script to send alerts elsewhere, or `''` to stop them.)
 
 **If you change the script later:** Deploy → Manage deployments → ✏️ Edit →
 Version: **New version** → Deploy. The URL stays the same.
