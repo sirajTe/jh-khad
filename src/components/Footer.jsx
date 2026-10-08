@@ -4,10 +4,10 @@ import { Logo, NAV_IDS } from './Header'
 
 export default function Footer({ t, lang }) {
   return (
-    <footer className="bg-brand-950 pb-24 pt-12 text-white/80">
+    <footer className="bg-brand-950 pb-32 pt-12 md:pb-24 text-white/80">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:grid-cols-3">
         <div>
-          <Logo light />
+          <Logo t={t} light />
           <p className="mt-3 text-sm">{t.footerAbout}</p>
         </div>
         <div>

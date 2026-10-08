@@ -4,12 +4,14 @@ import Header from './components/Header'
 import Hero from './components/Hero'
 import Categories from './components/Categories'
 import Products from './components/Products'
+import Shops from './components/Shops'
 import WhyUs from './components/WhyUs'
 import Gallery from './components/Gallery'
 import EnquiryForm from './components/EnquiryForm'
+import BookingModal from './components/BookingModal'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
-import FloatingWhatsApp from './components/FloatingWhatsApp'
+import FloatingButtons from './components/FloatingButtons'
 
 function getSavedLang() {
   try {
@@ -22,7 +24,7 @@ function getSavedLang() {
 export default function App() {
   const [lang, setLang] = useState(getSavedLang)
   const [filter, setFilter] = useState('all')
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [booking, setBooking] = useState(null) // set → Order Now popup is open
   const t = TEXT[lang]
 
   useEffect(() => {
@@ -41,25 +43,26 @@ export default function App() {
     document.getElementById('products')?.scrollIntoView()
   }
 
-  const bookProduct = (productName) => {
-    setSelectedProduct({ name: productName, at: Date.now() })
-    document.getElementById('enquiry')?.scrollIntoView()
+  const openBooking = (productName, quantity) => {
+    setBooking({ name: productName, quantity, at: Date.now() })
   }
 
   return (
     <>
       <Header t={t} lang={lang} onToggleLang={toggleLang} />
       <main>
-        <Hero t={t} />
+        <Hero t={t} onBook={() => openBooking()} />
         <Categories t={t} onSelect={showCategory} />
-        <Products t={t} lang={lang} filter={filter} setFilter={setFilter} onBook={bookProduct} />
+        <Products t={t} lang={lang} filter={filter} setFilter={setFilter} onBook={openBooking} />
+        <Shops t={t} lang={lang} />
         <WhyUs t={t} />
         <Gallery t={t} />
-        <EnquiryForm t={t} lang={lang} selectedProduct={selectedProduct} />
+        <EnquiryForm t={t} lang={lang} />
         <Contact t={t} lang={lang} />
       </main>
       <Footer t={t} lang={lang} />
-      <FloatingWhatsApp />
+      <FloatingButtons t={t} />
+      <BookingModal t={t} lang={lang} booking={booking} onClose={() => setBooking(null)} />
     </>
   )
 }
