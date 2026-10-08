@@ -5,8 +5,10 @@
  * then Deploy → New deployment → Web app (see README.md for full steps).
  */
 
-const SHEET_NAME = 'Enquiries';
-const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
+// "JH" spreadsheet: https://docs.google.com/spreadsheets/d/1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw/edit
+const SPREADSHEET_ID = '1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw';
+const SHEET_NAME = 'JH'; // tab name
+const NOTIFY_EMAIL = 'sirajul.mondal.tech@gmail.com'; // set to '' to turn off email alerts
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
 
@@ -52,7 +54,7 @@ function doGet() {
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   if (sheet.getLastRow() === 0) {
