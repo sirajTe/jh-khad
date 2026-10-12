@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { PRODUCTS } from '../config'
+import { useProducts } from '../products'
 import { formatRupees, offerPrice } from '../utils'
 import { CATEGORY_IDS } from './Categories'
 import Section, { LazyImg } from './Section'
 
 export default function Products({ t, lang, filter, setFilter, cart }) {
-  const list = filter === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === filter)
+  const products = useProducts()
+  const list = filter === 'all' ? products : products.filter((p) => p.category === filter)
   const filters = ['all', ...CATEGORY_IDS]
 
   return (
@@ -43,7 +44,8 @@ export default function Products({ t, lang, filter, setFilter, cart }) {
 function ProductCard({ p, t, lang, cart }) {
   const name = p.name[lang] || p.name.en
   const use = p.use[lang] || p.use.en
-  const [packIdx, setPackIdx] = useState(0)
+  const [picked, setPackIdx] = useState(0)
+  const packIdx = picked < p.packs.length ? picked : 0 // packs can shrink when the sheet loads
 
   const mrp = p.prices?.[packIdx]
   const hasPrice = mrp != null

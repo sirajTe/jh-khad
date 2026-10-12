@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { SHOP } from '../config'
 import { cartCount, cartLines, newOrderId } from '../cart'
+import { useProducts } from '../products'
 import { contactErrors, formatRupees, sendToSheet, telLink, whatsappTextLink } from '../utils'
 import { AddButton } from './Products'
 import { CartIcon, CheckIcon, CloseIcon } from './Icons'
@@ -30,9 +31,10 @@ function orderSummary(lines) {
 
 // Green bar fixed to the bottom of the screen while the cart has items
 export function CartBar({ t, items, onOpen }) {
+  const products = useProducts()
   const count = cartCount(items)
   if (!count) return null
-  const { pay } = totals(cartLines(items))
+  const { pay } = totals(cartLines(items, products))
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4 sm:pb-4">
@@ -68,7 +70,8 @@ export function CartPanel({ t, lang, cart, open, onClose }) {
 
   const c = t.cart
   const f = t.form
-  const lines = cartLines(cart.items)
+  const products = useProducts()
+  const lines = cartLines(cart.items, products)
   const { pay, save, onRequest } = totals(lines)
 
   useEffect(() => {

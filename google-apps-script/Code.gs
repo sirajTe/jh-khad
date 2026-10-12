@@ -8,6 +8,7 @@
 // "JH" spreadsheet: https://docs.google.com/spreadsheets/d/1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw/edit
 const SPREADSHEET_ID = '1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw';
 const SHEET_NAME = 'JH'; // tab name
+const PRODUCTS_SHEET_NAME = 'Products'; // tab the website reads products from
 const NOTIFY_EMAIL = 'sirajul.mondal.tech@gmail.com'; // set to '' to turn off email alerts
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
@@ -48,9 +49,54 @@ function doPost(e) {
   }
 }
 
-// Lets you open the Web app URL in a browser to check it is working.
-function doGet() {
+// ?action=products → the product list from the "Products" tab (read by the website).
+// Without it, opening the Web app URL in a browser just checks it is working.
+function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'products') {
+    try {
+      return json_({ result: 'ok', products: getProducts_() });
+    } catch (err) {
+      return json_({ result: 'error', error: String(err) });
+    }
+  }
   return json_({ result: 'ok', message: 'JH AGRO AGENCY enquiry script is running.' });
+}
+
+// Each row of the Products tab as { column header: cell text }.
+// Cached for 60 seconds so many visitors don't slow the sheet down —
+// a change in the sheet shows on the website within about a minute.
+function getProducts_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('products');
+  if (cached) return JSON.parse(cached);
+
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(PRODUCTS_SHEET_NAME);
+  if (!sheet) return [];
+  const range = sheet.getDataRange();
+  const values = range.getValues();
+  const shown = range.getDisplayValues();
+  // A number cell like 1350 can display as "1,350", which would look like two
+  // prices — so numbers are sent as plain digits, everything else as shown.
+  const rows = shown.map(function (row, r) {
+    return row.map(function (cell, c) {
+      return typeof values[r][c] === 'number' ? String(values[r][c]) : cell.trim();
+    });
+  });
+  const headers = rows.shift().map(function (h) { return h.toLowerCase().replace(/\s+/g, '_'); });
+  const products = rows
+    .filter(function (row) { return row.some(function (cell) { return cell; }); })
+    .map(function (row) {
+      const obj = {};
+      headers.forEach(function (h, i) { if (h) obj[h] = row[i]; });
+      return obj;
+    });
+
+  try {
+    cache.put('products', JSON.stringify(products), 60);
+  } catch (err) {
+    // list too big for the cache — just read the sheet every time
+  }
+  return products;
 }
 
 function getSheet_() {

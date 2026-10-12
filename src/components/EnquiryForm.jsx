@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { PRODUCTS } from '../config'
+import { useProducts } from '../products'
 import { contactErrors, sendToSheet, telLink, whatsappLink } from '../utils'
 import { CheckIcon } from './Icons'
 import Section from './Section'
@@ -19,6 +19,7 @@ export default function EnquiryForm({ t, lang }) {
 // The form itself — used in the Enquiry section and in the Order Now popup.
 export function EnquiryFields({ t, lang, selectedProduct }) {
   const f = t.form
+  const products = useProducts()
   const uid = useId() // keeps input ids unique when the form appears twice
   const [data, setData] = useState(EMPTY)
   const [errors, setErrors] = useState({})
@@ -97,7 +98,7 @@ export function EnquiryFields({ t, lang, selectedProduct }) {
         <label htmlFor={`${uid}-product`} className={label}>{f.product}</label>
         <input id={`${uid}-product`} name="product" list={`${uid}-products`} value={data.product} onChange={update} placeholder={f.productPh} className={field} />
         <datalist id={`${uid}-products`}>
-          {PRODUCTS.map((p) => <option key={p.id} value={p.name.en} />)}
+          {products.map((p) => <option key={p.id} value={p.name.en} />)}
         </datalist>
       </div>
       <div className="sm:col-span-2">

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { PRODUCTS } from './config'
 import { offerPrice } from './utils'
 
-// Cart items are { id, pack, qty }. Prices are looked up from PRODUCTS each
-// time, so a price change in config.js shows up in carts already saved.
+// Cart items are { id, pack, qty }. Prices are looked up from the current
+// product list each time, so a price change in the sheet shows up in carts
+// already saved.
 
 function loadCart() {
   try {
@@ -43,13 +43,13 @@ export function useCart() {
 }
 
 // Cart items joined with their product details. Items whose product was
-// removed from config.js are dropped.
-export function cartLines(items) {
+// removed (or whose pack size no longer exists) are dropped.
+export function cartLines(items, products) {
   return items.flatMap((i) => {
-    const p = PRODUCTS.find((x) => x.id === i.id)
-    if (!p) return []
-    const packIdx = p.packs.indexOf(i.pack)
-    const mrp = packIdx >= 0 ? p.prices?.[packIdx] : undefined
+    const p = products.find((x) => x.id === i.id)
+    const packIdx = p ? p.packs.indexOf(i.pack) : -1
+    if (packIdx < 0) return []
+    const mrp = p.prices?.[packIdx]
     const price = mrp != null ? offerPrice(mrp, p.offer) : null // null → price on request
     return [{ ...i, product: p, price, lineTotal: price == null ? null : price * i.qty }]
   })
