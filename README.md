@@ -20,7 +20,8 @@ Built with React + JavaScript + Tailwind CSS (Vite).
 
 ## Edit products, photos and shop details
 
-Everything you normally change is in **one file: `src/config.js`**
+Products are changed in the **Google Sheet** (see below). Shop details and
+photos are in **one file: `src/config.js`**
 
 - `GOOGLE_SCRIPT_URL` — link for the enquiry form (see below)
 - `SHOP` — phone, WhatsApp, email, address
