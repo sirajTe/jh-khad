@@ -1,12 +1,14 @@
 /**
- * JH KHAD BHANDAR — Enquiry form → Google Sheet
+ * JH AGRO AGENCY — Enquiry form → Google Sheet
  *
  * Paste this whole file into Extensions → Apps Script of your Google Sheet,
  * then Deploy → New deployment → Web app (see README.md for full steps).
  */
 
-const SHEET_NAME = 'Enquiries';
-const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
+// "JH" spreadsheet: https://docs.google.com/spreadsheets/d/1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw/edit
+const SPREADSHEET_ID = '1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw';
+const SHEET_NAME = 'JH'; // tab name
+const NOTIFY_EMAIL = 'sirajul.mondal.tech@gmail.com'; // set to '' to turn off email alerts
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
 
@@ -48,11 +50,11 @@ function doPost(e) {
 
 // Lets you open the Web app URL in a browser to check it is working.
 function doGet() {
-  return json_({ result: 'ok', message: 'JH KHAD BHANDAR enquiry script is running.' });
+  return json_({ result: 'ok', message: 'JH AGRO AGENCY enquiry script is running.' });
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   if (sheet.getLastRow() === 0) {
