@@ -1,7 +1,8 @@
 # JH AGRO AGENCY — Product Catalogue Website
 
-Simple, fast, mobile-friendly catalogue for the shop. No cart or payment —
-customers contact you by **Call**, **WhatsApp** or the **Enquiry form**.
+Simple, fast, mobile-friendly catalogue for the shop. Customers can add
+products to a cart and order, or contact you by **Call**, **WhatsApp** or the
+**Enquiry form**.
 
 Built with React + JavaScript + Tailwind CSS (Vite).
 
