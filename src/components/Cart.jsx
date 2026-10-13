@@ -317,7 +317,8 @@ export function CartPanel({ t, lang, cart, open, onClose }) {
   )
 }
 
-// UPI payment for a placed order: app button (phones), QR code (desktop), copyable ID.
+// UPI payment for a placed order: QR code and copyable ID. No "pay with app" button —
+// UPI apps decline those links when the payee is a personal UPI ID.
 // amount is null when some items are price on request — the payer then types it.
 function UpiPay({ t, orderId, amount }) {
   const c = t.cart
@@ -346,9 +347,9 @@ function UpiPay({ t, orderId, amount }) {
     <div className="mt-5 rounded-2xl bg-white p-4 text-center ring-1 ring-gray-200">
       <h3 className="font-extrabold text-brand-900">{c.payTitle}</h3>
       {amount ? (
-        <a href={link} className="mt-3 block rounded-xl bg-gold-400 py-3 font-extrabold text-brand-950 hover:bg-gold-300">
-          {c.payButton} {formatRupees(amount)} {c.payButtonApp}
-        </a>
+        <p className="mt-2 text-gray-600">
+          {c.payAmount}: <span className="text-xl font-extrabold text-brand-900">{formatRupees(amount)}</span>
+        </p>
       ) : (
         <p className="mt-2 text-sm text-gold-600">{c.payLaterNote}</p>
       )}

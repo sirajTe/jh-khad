@@ -16,7 +16,7 @@ export const SHOP = {
   phone: '+917477445056',
   phoneDisplay: '+91 74774 45056',
   whatsapp: '917477445056',
-  upi: 'Q454203177@ybl', // PhonePe merchant UPI ID (JH KHAD BHANDAR QR); personal IDs get declined from website pay links
+  upi: '7477445056@apl', // UPI ID shown at checkout (QR + copyable ID)
   email: 'jh749910@gmail.com',
   address: 'Karanpur, Barsoi, Katihar, Bihar - 854317',
   addressHi: 'करनपुर, बारसोई, कटिहार, बिहार - 854317',
