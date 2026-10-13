@@ -5,11 +5,11 @@
  * then Deploy → New deployment → Web app (see README.md for full steps).
  */
 
-// "JH" spreadsheet: https://docs.google.com/spreadsheets/d/1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw/edit
-const SPREADSHEET_ID = '1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw';
+// "JH" spreadsheet: https://docs.google.com/spreadsheets/d/1ZRbLBVXGWYTAsCBd2No4DEbjVYKq4bIWxt_MswE0Mrc/edit
+const SPREADSHEET_ID = '1ZRbLBVXGWYTAsCBd2No4DEbjVYKq4bIWxt_MswE0Mrc';
 const SHEET_NAME = 'JH'; // tab name
 const PRODUCTS_SHEET_NAME = 'Products'; // tab the website reads products from
-const NOTIFY_EMAIL = 'sirajul.mondal.tech@gmail.com'; // set to '' to turn off email alerts
+const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
 

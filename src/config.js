@@ -6,9 +6,9 @@
 // 1) GOOGLE SHEET LINK
 // Paste your Google Apps Script "Web app URL" here (see README.md).
 // Enquiries go to the "JH" sheet → "JH" tab:
-// https://docs.google.com/spreadsheets/d/1YdJglOuZiBYhmKsZPqL_Y4aRA11hRK5NQ79IK406cqw/edit
+// https://docs.google.com/spreadsheets/d/1ZRbLBVXGWYTAsCBd2No4DEbjVYKq4bIWxt_MswE0Mrc/edit
 export const GOOGLE_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbyjbukKylJImZ6K3dhcaglQJqvUx2hg-quX6dk6lqUqMd6-jPp5JD-sqi7CtT6B9OvY/exec'
+  'https://script.google.com/macros/s/AKfycbzceUGTLoKBkvZTjfZ0Tl3MnbwXP4pEO3RarWNeItmKpc4wIA_YDQx6MiPsMEYIUi-I/exec'
 
 // 2) SHOP DETAILS
 export const SHOP = {
@@ -16,7 +16,7 @@ export const SHOP = {
   phone: '+917477445056',
   phoneDisplay: '+91 74774 45056',
   whatsapp: '917477445056',
-  upi: '6290318957@ybl', // UPI ID shown at checkout for online payment
+  upi: 'mdjahirhossain992@ybl', // UPI ID shown at checkout for online payment
   email: 'jh749910@gmail.com',
   address: 'Karanpur, Barsoi, Katihar, Bihar - 854317',
   addressHi: 'करनपुर, बारसोई, कटिहार, बिहार - 854317',
