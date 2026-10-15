@@ -54,12 +54,12 @@ function LoginForm({ onLogin }) {
     const l = { email: email.trim(), password }
     try {
       if (!(await scriptSupportsAdmin())) {
-        return setError('The Google Apps Script is the old version. Paste the new Code.gs and deploy a New version (see README).')
+        return setError('Invalid user')
       }
       await call(l, 'login')
       onLogin(l)
     } catch (err) {
-      setError(err instanceof DeniedError ? 'Wrong email or password.' : 'Could not reach the Google Sheet. Check the internet and try again.')
+      setError(err instanceof DeniedError ? 'Invalid user' : 'Could not reach the Google Sheet. Check the internet and try again.')
     } finally {
       setBusy(false)
     }

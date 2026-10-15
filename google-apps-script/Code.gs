@@ -191,9 +191,10 @@ function saveProduct_(row, product) {
     const next = keys.map(function (k, i) {
       return PRODUCT_COLUMNS.indexOf(k) !== -1 && k in product ? clean_(product[k]) : current[i];
     });
-    const range = sheet.getRange(row, 1, 1, keys.length);
-    range.setNumberFormat('@'); // keep "350, 1300" and "10" as plain text
-    range.setValues([next]);
+    // No setNumberFormat here: the Products tab is a table with typed
+    // columns, and Sheets refuses to change their format.
+    sheet.getRange(row, 1, 1, keys.length).setValues([next]);
+    SpreadsheetApp.flush(); // so a sheet error comes back as JSON, not a Google error page
     CacheService.getScriptCache().remove('products'); // website sees the change at once
     return row;
   } finally {
