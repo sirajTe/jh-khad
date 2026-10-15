@@ -9,6 +9,7 @@
 const SPREADSHEET_ID = '1ZRbLBVXGWYTAsCBd2No4DEbjVYKq4bIWxt_MswE0Mrc';
 const SHEET_NAME = 'JH'; // tab name
 const PRODUCTS_SHEET_NAME = 'Products'; // tab the website reads products from
+const CATEGORIES_SHEET_NAME = 'Categories'; // tab the website reads categories from
 const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
 
 // Admin panel login. Checked here on Google's side, so the password is never
@@ -16,6 +17,14 @@ const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
 const ADMIN_EMAIL = 'jh749910@gmail.com';
 const ADMIN_PASSWORD = 'jh@1234';
 const PRODUCT_COLUMNS = ['id', 'category', 'name_en', 'name_hi', 'use_en', 'use_hi', 'packs', 'prices', 'offer', 'image', 'active'];
+const CATEGORY_COLUMNS = ['id', 'name_en', 'name_hi', 'desc_en', 'desc_hi', 'image', 'active'];
+// Filled into a new Categories tab so the website keeps its categories
+const DEFAULT_CATEGORIES = [
+  ['fertilizer', 'Fertilizers', 'खाद / उर्वरक', 'Urea, DAP, NPK, zinc, boron & more', 'यूरिया, डीएपी, एनपीके, जिंक, बोरॉन आदि', '', 'yes'],
+  ['micronutrient', 'Micronutrients', 'सूक्ष्म पोषक तत्व', 'Zinc, boron, sulphur & other trace nutrients', 'जिंक, बोरॉन, सल्फर और अन्य सूक्ष्म पोषक तत्व', '', 'yes'],
+  ['pesticide', 'Pesticides', 'कीटनाशक', 'Protect crops from insects, disease & weeds', 'कीट, रोग और खरपतवार से फसल की रक्षा', '', 'yes'],
+  ['seed', 'Seeds', 'बीज', 'High-yield maize, paddy & vegetable seeds', 'अधिक उपज वाले मक्का, धान और सब्जी बीज', '', 'yes'],
+];
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
 const ORDER_STATUSES = ['Pending', 'Picked up', 'In Transit', 'Delivered', 'Return', 'Cancelled'];
@@ -65,12 +74,13 @@ function doPost(e) {
   }
 }
 
-// ?action=products → the product list from the "Products" tab (read by the website).
+// ?action=products → the products and categories from the "Products" and
+// "Categories" tabs (read by the website).
 // Without it, opening the Web app URL in a browser just checks it is working.
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'products') {
     try {
-      return json_({ result: 'ok', products: getProducts_() });
+      return json_({ result: 'ok', products: getProducts_(), categories: getCategories_() });
     } catch (err) {
       return json_({ result: 'error', error: String(err) });
     }
@@ -78,15 +88,22 @@ function doGet(e) {
   return json_({ result: 'ok', admin: true, message: 'JH AGRO AGENCY enquiry script is running.' });
 }
 
-// Each row of the Products tab as { column header: cell text }.
+function getProducts_() {
+  return readTab_(SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(PRODUCTS_SHEET_NAME), 'products');
+}
+
+function getCategories_() {
+  return readTab_(categoriesSheet_(), 'categories');
+}
+
+// Each row of a tab as { column header: cell text }.
 // Cached for 60 seconds so many visitors don't slow the sheet down —
 // a change in the sheet shows on the website within about a minute.
-function getProducts_() {
+function readTab_(sheet, cacheKey) {
   const cache = CacheService.getScriptCache();
-  const cached = cache.get('products');
+  const cached = cache.get(cacheKey);
   if (cached) return JSON.parse(cached);
 
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(PRODUCTS_SHEET_NAME);
   if (!sheet) return [];
   const range = sheet.getDataRange();
   const values = range.getValues();
@@ -99,7 +116,7 @@ function getProducts_() {
     });
   });
   const headers = rows.shift().map(function (h) { return h.toLowerCase().replace(/\s+/g, '_'); });
-  const products = rows
+  const list = rows
     .filter(function (row) { return row.some(function (cell) { return cell; }); })
     .map(function (row) {
       const obj = {};
@@ -108,11 +125,11 @@ function getProducts_() {
     });
 
   try {
-    cache.put('products', JSON.stringify(products), 60);
+    cache.put(cacheKey, JSON.stringify(list), 60);
   } catch (err) {
     // list too big for the cache — just read the sheet every time
   }
-  return products;
+  return list;
 }
 
 // ---------- Admin panel ----------
@@ -126,9 +143,13 @@ function admin_(p) {
     case 'login':
       return { result: 'ok' };
     case 'admin_products':
-      return { result: 'ok', products: adminProducts_() };
+      return { result: 'ok', products: adminRows_(productsSheet_()) };
     case 'save_product':
-      return { result: 'ok', row: saveProduct_(Number(p.row) || 0, JSON.parse(p.product || '{}')) };
+      return { result: 'ok', row: saveRow_(productsSheet_(), PRODUCT_COLUMNS, 'products', Number(p.row) || 0, JSON.parse(p.product || '{}')) };
+    case 'admin_categories':
+      return { result: 'ok', categories: adminRows_(categoriesSheet_()) };
+    case 'save_category':
+      return { result: 'ok', row: saveCategory_(Number(p.row) || 0, JSON.parse(p.category || '{}')) };
     case 'orders':
       return { result: 'ok', orders: orders_() };
     case 'set_status':
@@ -149,15 +170,27 @@ function productsSheet_() {
   return sheet;
 }
 
+// A new Categories tab starts with the shop's current categories
+function categoriesSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CATEGORIES_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(CATEGORIES_SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, DEFAULT_CATEGORIES.length + 1, CATEGORY_COLUMNS.length)
+      .setValues([CATEGORY_COLUMNS].concat(DEFAULT_CATEGORIES));
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
 // Header names as used by the website (lower case, spaces → _)
 function headerKeys_(sheet) {
   return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
     .map(function (h) { return h.trim().toLowerCase().replace(/\s+/g, '_'); });
 }
 
-// All product rows, hidden ones too, each with its sheet row number
-function adminProducts_() {
-  const sheet = productsSheet_();
+// All rows of a tab, hidden ones too, each with its sheet row number
+function adminRows_(sheet) {
   const keys = headerKeys_(sheet);
   if (sheet.getLastRow() < 2) return [];
   const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, keys.length);
@@ -177,13 +210,12 @@ function adminProducts_() {
 
 // row > 1 → update that row; otherwise add a new row at the bottom.
 // Missing columns are added to the header so nothing is lost.
-function saveProduct_(row, product) {
+function saveRow_(sheet, columns, cacheKey, row, item) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    const sheet = productsSheet_();
     let keys = headerKeys_(sheet);
-    PRODUCT_COLUMNS.forEach(function (col) {
+    columns.forEach(function (col) {
       if (keys.indexOf(col) === -1) {
         sheet.getRange(1, keys.length + 1).setValue(col);
         keys.push(col);
@@ -192,17 +224,29 @@ function saveProduct_(row, product) {
     if (!(row > 1 && row <= sheet.getLastRow())) row = sheet.getLastRow() + 1;
     const current = sheet.getRange(row, 1, 1, keys.length).getValues()[0];
     const next = keys.map(function (k, i) {
-      return PRODUCT_COLUMNS.indexOf(k) !== -1 && k in product ? clean_(product[k]) : current[i];
+      return columns.indexOf(k) !== -1 && k in item ? clean_(item[k]) : current[i];
     });
-    // No setNumberFormat here: the Products tab is a table with typed
+    // No setNumberFormat here: the tabs can be tables with typed
     // columns, and Sheets refuses to change their format.
     sheet.getRange(row, 1, 1, keys.length).setValues([next]);
     SpreadsheetApp.flush(); // so a sheet error comes back as JSON, not a Google error page
-    CacheService.getScriptCache().remove('products'); // website sees the change at once
+    CacheService.getScriptCache().remove(cacheKey); // website sees the change at once
     return row;
   } finally {
     lock.releaseLock();
   }
+}
+
+// A new category can't reuse an id — products would land in both
+function saveCategory_(row, category) {
+  const sheet = categoriesSheet_();
+  const id = String(category.id || '').trim().toLowerCase();
+  if (!id) throw new Error('Category ID is missing');
+  const taken = adminRows_(sheet).some(function (c) {
+    return c.row !== row && String(c.id || '').trim().toLowerCase() === id;
+  });
+  if (taken) throw new Error('A category with ID "' + id + '" already exists');
+  return saveRow_(sheet, CATEGORY_COLUMNS, 'categories', row, category);
 }
 
 // Rows of the JH tab (orders + enquiries), newest first, each with its sheet row number

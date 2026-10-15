@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useProducts } from '../products'
+import { categoryName, useCategories, useProducts } from '../products'
 import { formatRupees, offerPrice } from '../utils'
-import { CATEGORY_IDS } from './Categories'
 import Section, { LazyImg } from './Section'
 
 export default function Products({ t, lang, filter, setFilter, cart }) {
   const products = useProducts()
+  const categories = useCategories()
   const list = filter === 'all' ? products : products.filter((p) => p.category === filter)
-  const filters = ['all', ...CATEGORY_IDS]
+  const filters = ['all', ...categories.map((c) => c.id)]
 
   return (
     <Section id="products" title={t.productsTitle}>
@@ -23,7 +23,7 @@ export default function Products({ t, lang, filter, setFilter, cart }) {
               filter === f ? 'bg-brand-800 text-white' : 'bg-brand-50 text-brand-900 ring-1 ring-brand-100 hover:bg-brand-100'
             }`}
           >
-            {f === 'all' ? t.all : t.categories[f]}
+            {f === 'all' ? t.all : categoryName(categories, f, lang)}
           </button>
         ))}
       </div>
@@ -33,7 +33,7 @@ export default function Products({ t, lang, filter, setFilter, cart }) {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((p) => (
-            <ProductCard key={p.id} p={p} t={t} lang={lang} cart={cart} />
+            <ProductCard key={p.id} p={p} t={t} lang={lang} cart={cart} category={categoryName(categories, p.category, lang)} />
           ))}
         </div>
       )}
@@ -41,7 +41,7 @@ export default function Products({ t, lang, filter, setFilter, cart }) {
   )
 }
 
-function ProductCard({ p, t, lang, cart }) {
+function ProductCard({ p, t, lang, cart, category }) {
   const name = p.name[lang] || p.name.en
   const use = p.use[lang] || p.use.en
   const [picked, setPackIdx] = useState(0)
@@ -59,7 +59,7 @@ function ProductCard({ p, t, lang, cart }) {
       <div className="relative">
         <LazyImg src={p.image} alt={name} className="aspect-[4/3] w-full" />
         <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-bold text-brand-800">
-          {t.categories[p.category]}
+          {category}
         </span>
         {offer > 0 && (
           <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-extrabold text-white shadow">

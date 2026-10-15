@@ -42,8 +42,10 @@ export const IMAGES = {
 
   categories: {
     fertilizer: u('1416879595882-3373a0480b5b'), // soil & fertilizer
+    micronutrient: u('1622383563227-04401ab4e5ea'), // hands planting a seedling
     pesticide: u('1515150144380-bca9f1650ed9'), // spraying crops
     seed: u('1530836369250-ef72a3f5cda8'), // planting seeds by hand
+    default: u('1500382017468-9049fed747ef'), // wheat field — for a new category with no photo
   },
 
   products: {
@@ -85,8 +87,38 @@ export const IMAGES = {
   ],
 }
 
-// 4) PRODUCTS — add, remove or edit products here.
-//    category must be one of: 'fertilizer', 'pesticide', 'seed'
+// 4) CATEGORIES — the backup list, shown only until the Google Sheet loads.
+//    Day-to-day, categories are added and changed in the "Categories" tab
+//    of the sheet (or the admin panel).
+export const CATEGORIES = [
+  {
+    id: 'fertilizer',
+    name: { en: 'Fertilizers', hi: 'खाद / उर्वरक' },
+    desc: { en: 'Urea, DAP, NPK, zinc, boron & more', hi: 'यूरिया, डीएपी, एनपीके, जिंक, बोरॉन आदि' },
+    image: IMAGES.categories.fertilizer,
+  },
+  {
+    id: 'micronutrient',
+    name: { en: 'Micronutrients', hi: 'सूक्ष्म पोषक तत्व' },
+    desc: { en: 'Zinc, boron, sulphur & other trace nutrients', hi: 'जिंक, बोरॉन, सल्फर और अन्य सूक्ष्म पोषक तत्व' },
+    image: IMAGES.categories.micronutrient,
+  },
+  {
+    id: 'pesticide',
+    name: { en: 'Pesticides', hi: 'कीटनाशक' },
+    desc: { en: 'Protect crops from insects, disease & weeds', hi: 'कीट, रोग और खरपतवार से फसल की रक्षा' },
+    image: IMAGES.categories.pesticide,
+  },
+  {
+    id: 'seed',
+    name: { en: 'Seeds', hi: 'बीज' },
+    desc: { en: 'High-yield maize, paddy & vegetable seeds', hi: 'अधिक उपज वाले मक्का, धान और सब्जी बीज' },
+    image: IMAGES.categories.seed,
+  },
+]
+
+// 5) PRODUCTS — the backup product list (see "Change products from the
+//    Google Sheet" in README.md). category must be an id from CATEGORIES.
 //    prices are in rupees, one for each pack size, in the same order.
 //    Remove the prices line to show "Price on Request" instead.
 //    offer is the % discount on those prices (remove it or set 0 for no offer).

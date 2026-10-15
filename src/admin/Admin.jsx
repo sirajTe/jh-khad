@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SHOP } from '../config'
 import { call, DeniedError, rememberLogin, savedLogin, scriptSupportsAdmin } from './api'
 
-const CATEGORIES = ['fertilizer', 'pesticide', 'seed']
+const EMPTY_CATEGORY = { id: '', name_en: '', name_hi: '', desc_en: '', desc_hi: '', image: '', active: 'yes' }
 const EMPTY_PRODUCT = {
   id: '', category: 'fertilizer', name_en: '', name_hi: '', use_en: '', use_hi: '',
   packs: '', prices: '', offer: '', image: '', active: 'yes',
@@ -109,6 +109,7 @@ function Dashboard({ login, onLogout }) {
           <span className="mr-auto font-extrabold">{SHOP.name} · Admin</span>
           <nav className="flex gap-1">
             <button className={tabClass('products')} onClick={() => setTab('products')}>Products</button>
+            <button className={tabClass('categories')} onClick={() => setTab('categories')}>Categories</button>
             <button className={tabClass('orders')} onClick={() => setTab('orders')}>Orders</button>
           </nav>
           <button className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-100 hover:bg-brand-800" onClick={onLogout}>
@@ -117,7 +118,9 @@ function Dashboard({ login, onLogout }) {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
-        {tab === 'products' ? <ProductsTab request={request} /> : <OrdersTab request={request} />}
+        {tab === 'products' && <ProductsTab request={request} />}
+        {tab === 'categories' && <CategoriesTab request={request} />}
+        {tab === 'orders' && <OrdersTab request={request} />}
       </main>
     </div>
   )
@@ -171,6 +174,8 @@ function ErrorBox({ error }) {
 
 function ProductsTab({ request }) {
   const [products, loading, error, reload] = useList(request, 'admin_products', 'products')
+  const [categoryRows] = useList(request, 'admin_categories', 'categories')
+  const categories = (categoryRows || []).map((c) => String(c.id || '').trim().toLowerCase()).filter(Boolean)
   const [editing, setEditing] = useState(null) // product row being edited, or EMPTY_PRODUCT for a new one
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
@@ -191,7 +196,7 @@ function ProductsTab({ request }) {
         <input className={`${input} max-w-xs`} placeholder="Search name or id…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className={`${input} w-auto`} value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="all">All categories</option>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       <ErrorBox error={error} />
@@ -222,6 +227,7 @@ function ProductsTab({ request }) {
       {editing && (
         <ProductForm
           product={editing}
+          categories={categories}
           request={request}
           onClose={() => setEditing(null)}
           onSaved={() => {
@@ -234,9 +240,16 @@ function ProductsTab({ request }) {
   )
 }
 
-function ProductForm({ product, request, onClose, onSaved }) {
+function ProductForm({ product, categories, request, onClose, onSaved }) {
   const isNew = !product.row
-  const [data, setData] = useState(() => ({ ...EMPTY_PRODUCT, ...product, active: isHidden(product) ? 'no' : 'yes' }))
+  const [data, setData] = useState(() => ({
+    ...EMPTY_PRODUCT,
+    category: categories[0] || '',
+    ...product,
+    active: isHidden(product) ? 'no' : 'yes',
+  }))
+  // Keep a product's category in the list even if it's no longer in the Categories tab
+  const options = data.category && !categories.includes(data.category) ? [data.category, ...categories] : categories
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -252,6 +265,7 @@ function ProductForm({ product, request, onClose, onSaved }) {
     e.preventDefault()
     setError('')
     if (!data.name_en.trim() || !data.packs.trim()) return setError('Name (English) and Packs are required.')
+    if (!data.category) return setError('Pick a category (add one in the Categories tab first).')
     setBusy(true)
     try {
       const { row, ...fields } = data
@@ -286,7 +300,7 @@ function ProductForm({ product, request, onClose, onSaved }) {
           <div>
             <label className={label} htmlFor="f-category">Category</label>
             <select id="f-category" className={input} value={data.category} onChange={set('category')}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {options.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           {field('id', 'ID', { placeholder: 'Blank = made from the name', disabled: !isNew && !!product.id })}
@@ -304,6 +318,125 @@ function ProductForm({ product, request, onClose, onSaved }) {
         </div>
         {!isNew && product.id && <p className="mt-2 text-xs text-gray-500">The ID can't be changed — customers' carts use it.</p>}
         {priceWarning && <p className="mt-3 text-sm font-semibold text-amber-700">{priceWarning}</p>}
+        {error && <p className="mt-3 text-sm font-semibold text-red-600" role="alert">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className={btnGhost} onClick={onClose}>Cancel</button>
+          <button type="submit" className={btnPrimary} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ---------------- Categories ----------------
+
+function CategoriesTab({ request }) {
+  const [categories, loading, error, reload] = useList(request, 'admin_categories', 'categories')
+  const [editing, setEditing] = useState(null) // category row being edited, or EMPTY_CATEGORY for a new one
+
+  return (
+    <>
+      <Toolbar title="Categories" count={categories?.length} loading={loading} onReload={reload}>
+        <button className={btnPrimary} onClick={() => setEditing(EMPTY_CATEGORY)}>+ Add category</button>
+      </Toolbar>
+      <p className="mb-4 text-sm text-gray-600">Categories show on the website in this order (the order of rows in the Categories tab).</p>
+      <ErrorBox error={error} />
+      {categories && !categories.length && <p className="text-gray-500">No categories yet.</p>}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(categories || []).map((c) => (
+          <article key={c.row} className={`flex gap-3 rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200 ${isHidden(c) ? 'opacity-60' : ''}`}>
+            {c.image ? (
+              <img src={c.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-lg bg-gray-100 object-cover" />
+            ) : (
+              <div className="h-20 w-20 shrink-0 rounded-lg bg-brand-50" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start gap-2">
+                <h3 className="min-w-0 flex-1 truncate font-bold text-gray-900">{c.name_en || '(no name)'}</h3>
+                {isHidden(c) && <span className="rounded bg-gray-200 px-1.5 text-xs font-bold text-gray-600">HIDDEN</span>}
+              </div>
+              <p className="text-xs font-semibold uppercase text-brand-700">{c.id}</p>
+              <p className="truncate text-sm text-gray-700">{c.name_hi}</p>
+              <p className="truncate text-sm text-gray-500">{c.desc_en}</p>
+            </div>
+            <button className={`${btnGhost} self-start px-3 py-1 text-sm`} onClick={() => setEditing(c)}>Edit</button>
+          </article>
+        ))}
+      </div>
+
+      {editing && (
+        <CategoryForm
+          category={editing}
+          request={request}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            reload()
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+function CategoryForm({ category, request, onClose, onSaved }) {
+  const isNew = !category.row
+  const [data, setData] = useState(() => ({ ...EMPTY_CATEGORY, ...category, active: isHidden(category) ? 'no' : 'yes' }))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (key) => (e) => setData((d) => ({ ...d, [key]: e.target.value }))
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (!data.name_en.trim()) return setError('Name (English) is required.')
+    setBusy(true)
+    try {
+      const { row, ...fields } = data
+      // Products refer to the category by its id, so it's always written down
+      fields.id = (fields.id.trim() || fields.name_en).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      await request('save_category', { row: row || '', category: JSON.stringify(fields) })
+      onSaved()
+    } catch (err) {
+      setError(String(err.message || err))
+      setBusy(false)
+    }
+  }
+
+  const field = (key, title, props = {}) => (
+    <div>
+      <label className={label} htmlFor={`c-${key}`}>{title}</label>
+      <input id={`c-${key}`} className={input} value={data[key]} onChange={set(key)} {...props} />
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 z-20 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-6" onClick={onClose}>
+      <form
+        onSubmit={submit}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl"
+      >
+        <h2 className="mb-4 text-xl font-extrabold text-brand-900">{isNew ? 'Add category' : `Edit: ${category.name_en}`}</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {field('name_en', 'Name (English) *', { required: true, placeholder: 'Micronutrients' })}
+          {field('name_hi', 'Name (Hindi)')}
+          {field('desc_en', 'Description (English)')}
+          {field('desc_hi', 'Description (Hindi)')}
+          {field('id', 'ID', { placeholder: 'Blank = made from the name', disabled: !isNew && !!category.id })}
+          <div>
+            <label className={label} htmlFor="c-active">Show on website</label>
+            <select id="c-active" className={input} value={data.active} onChange={set('active')}>
+              <option value="yes">Yes — show</option>
+              <option value="no">No — hide</option>
+            </select>
+          </div>
+          <div className="sm:col-span-2">{field('image', 'Image link', { placeholder: 'https://… (blank = a default farm photo)' })}</div>
+        </div>
+        {!isNew && category.id && <p className="mt-2 text-xs text-gray-500">The ID can't be changed — products use it.</p>}
+        {data.active === 'no' && <p className="mt-3 text-sm font-semibold text-amber-700">Products in a hidden category are hidden from the website too.</p>}
         {error && <p className="mt-3 text-sm font-semibold text-red-600" role="alert">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" className={btnGhost} onClick={onClose}>Cancel</button>
