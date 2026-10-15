@@ -111,6 +111,21 @@ Good to know:
   of the products still show.
 - Rows show on the website in the same order as in the sheet.
 
+## Admin panel (this branch)
+
+On the `admin-panel` branch the home page (`/`) is the admin panel instead of
+the website. Log in with **jh749910@gmail.com** / **jh@1234** to:
+
+- **Products** — see every row of the Products tab (hidden ones too), edit a
+  product or add a new one. Saves go straight into the sheet.
+- **Orders** — see rows of the **JH** tab, newest first (cart orders,
+  enquiries, or all).
+
+The email and password are checked by the Apps Script, not the website. To
+change them, edit `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `Code.gs`. **After any
+change to `Code.gs`, paste it into Apps Script and deploy a New version** —
+the panel refuses to log in until the script is updated.
+
 ## Put the website online (free)
 
 ```bash

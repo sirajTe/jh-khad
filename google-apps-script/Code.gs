@@ -11,9 +11,24 @@ const SHEET_NAME = 'JH'; // tab name
 const PRODUCTS_SHEET_NAME = 'Products'; // tab the website reads products from
 const NOTIFY_EMAIL = 'jh749910@gmail.com'; // set to '' to turn off email alerts
 
+// Admin panel login. Checked here on Google's side, so the password is never
+// in the website code. Change them here and deploy a New version.
+const ADMIN_EMAIL = 'jh749910@gmail.com';
+const ADMIN_PASSWORD = 'jh@1234';
+const PRODUCT_COLUMNS = ['id', 'category', 'name_en', 'name_hi', 'use_en', 'use_hi', 'packs', 'prices', 'offer', 'image', 'active'];
+
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
 
 function doPost(e) {
+  // Admin panel requests (they send an "action"); enquiries and orders don't.
+  if (e && e.parameter && e.parameter.action) {
+    try {
+      return json_(admin_(e.parameter));
+    } catch (err) {
+      return json_({ result: 'error', error: String(err) });
+    }
+  }
+
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
 
@@ -59,7 +74,7 @@ function doGet(e) {
       return json_({ result: 'error', error: String(err) });
     }
   }
-  return json_({ result: 'ok', message: 'JH AGRO AGENCY enquiry script is running.' });
+  return json_({ result: 'ok', admin: true, message: 'JH AGRO AGENCY enquiry script is running.' });
 }
 
 // Each row of the Products tab as { column header: cell text }.
@@ -97,6 +112,108 @@ function getProducts_() {
     // list too big for the cache — just read the sheet every time
   }
   return products;
+}
+
+// ---------- Admin panel ----------
+// Every admin request carries the email + password; wrong ones get nothing.
+function admin_(p) {
+  const email = String(p.email || '').trim().toLowerCase();
+  if (email !== ADMIN_EMAIL.toLowerCase() || String(p.password || '') !== ADMIN_PASSWORD) {
+    return { result: 'denied' };
+  }
+  switch (p.action) {
+    case 'login':
+      return { result: 'ok' };
+    case 'admin_products':
+      return { result: 'ok', products: adminProducts_() };
+    case 'save_product':
+      return { result: 'ok', row: saveProduct_(Number(p.row) || 0, JSON.parse(p.product || '{}')) };
+    case 'orders':
+      return { result: 'ok', orders: orders_() };
+    default:
+      return { result: 'error', error: 'Unknown action' };
+  }
+}
+
+function productsSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(PRODUCTS_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(PRODUCTS_SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(PRODUCT_COLUMNS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// Header names as used by the website (lower case, spaces → _)
+function headerKeys_(sheet) {
+  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
+    .map(function (h) { return h.trim().toLowerCase().replace(/\s+/g, '_'); });
+}
+
+// All product rows, hidden ones too, each with its sheet row number
+function adminProducts_() {
+  const sheet = productsSheet_();
+  const keys = headerKeys_(sheet);
+  if (sheet.getLastRow() < 2) return [];
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, keys.length);
+  const values = range.getValues();
+  const shown = range.getDisplayValues();
+  const list = [];
+  shown.forEach(function (row, r) {
+    if (!row.some(function (c) { return String(c).trim(); })) return;
+    const obj = { row: r + 2 };
+    keys.forEach(function (k, c) {
+      if (k) obj[k] = typeof values[r][c] === 'number' ? String(values[r][c]) : row[c].trim();
+    });
+    list.push(obj);
+  });
+  return list;
+}
+
+// row > 1 → update that row; otherwise add a new row at the bottom.
+// Missing columns are added to the header so nothing is lost.
+function saveProduct_(row, product) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = productsSheet_();
+    let keys = headerKeys_(sheet);
+    PRODUCT_COLUMNS.forEach(function (col) {
+      if (keys.indexOf(col) === -1) {
+        sheet.getRange(1, keys.length + 1).setValue(col);
+        keys.push(col);
+      }
+    });
+    if (!(row > 1 && row <= sheet.getLastRow())) row = sheet.getLastRow() + 1;
+    const current = sheet.getRange(row, 1, 1, keys.length).getValues()[0];
+    const next = keys.map(function (k, i) {
+      return PRODUCT_COLUMNS.indexOf(k) !== -1 && k in product ? clean_(product[k]) : current[i];
+    });
+    const range = sheet.getRange(row, 1, 1, keys.length);
+    range.setNumberFormat('@'); // keep "350, 1300" and "10" as plain text
+    range.setValues([next]);
+    CacheService.getScriptCache().remove('products'); // website sees the change at once
+    return row;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Rows of the JH tab (orders + enquiries), newest first
+function orders_() {
+  const sheet = getSheet_();
+  const rows = sheet.getDataRange().getDisplayValues();
+  const headers = rows.shift() || [];
+  return rows
+    .filter(function (row) { return row.some(function (c) { return String(c).trim(); }); })
+    .map(function (row) {
+      const obj = {};
+      headers.forEach(function (h, i) { if (h) obj[h] = row[i]; });
+      return obj;
+    })
+    .reverse();
 }
 
 function getSheet_() {
