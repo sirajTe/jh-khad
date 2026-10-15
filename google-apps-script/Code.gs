@@ -18,6 +18,7 @@ const ADMIN_PASSWORD = 'jh@1234';
 const PRODUCT_COLUMNS = ['id', 'category', 'name_en', 'name_hi', 'use_en', 'use_hi', 'packs', 'prices', 'offer', 'image', 'active'];
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
+const ORDER_STATUSES = ['Pending', 'Delivered', 'Return'];
 
 function doPost(e) {
   // Admin panel requests (they send an "action"); enquiries and orders don't.
@@ -130,6 +131,8 @@ function admin_(p) {
       return { result: 'ok', row: saveProduct_(Number(p.row) || 0, JSON.parse(p.product || '{}')) };
     case 'orders':
       return { result: 'ok', orders: orders_() };
+    case 'set_status':
+      return { result: 'ok', status: setOrderStatus_(Number(p.row) || 0, String(p.status || '')) };
     default:
       return { result: 'error', error: 'Unknown action' };
   }
@@ -202,19 +205,41 @@ function saveProduct_(row, product) {
   }
 }
 
-// Rows of the JH tab (orders + enquiries), newest first
+// Rows of the JH tab (orders + enquiries), newest first, each with its sheet row number
 function orders_() {
   const sheet = getSheet_();
   const rows = sheet.getDataRange().getDisplayValues();
   const headers = rows.shift() || [];
-  return rows
-    .filter(function (row) { return row.some(function (c) { return String(c).trim(); }); })
-    .map(function (row) {
-      const obj = {};
-      headers.forEach(function (h, i) { if (h) obj[h] = row[i]; });
-      return obj;
-    })
-    .reverse();
+  const list = [];
+  rows.forEach(function (row, r) {
+    if (!row.some(function (c) { return String(c).trim(); })) return;
+    const obj = { row: r + 2 };
+    headers.forEach(function (h, i) { if (h) obj[h] = row[i]; });
+    list.push(obj);
+  });
+  return list.reverse();
+}
+
+// Writes the order's status into a "Status" column (added if missing)
+function setOrderStatus_(row, status) {
+  if (ORDER_STATUSES.indexOf(status) === -1) throw new Error('Unknown status');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getSheet_();
+    if (!(row > 1 && row <= sheet.getLastRow())) throw new Error('Order not found');
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+    let col = headers.indexOf('Status') + 1;
+    if (!col) {
+      col = headers.length + 1;
+      sheet.getRange(1, col).setValue('Status').setFontWeight('bold').setBackground('#dcfce7');
+    }
+    sheet.getRange(row, col).setValue(status);
+    SpreadsheetApp.flush();
+    return status;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getSheet_() {

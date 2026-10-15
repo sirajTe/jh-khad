@@ -210,7 +210,6 @@ function ProductsTab({ request }) {
                 <h3 className="min-w-0 flex-1 truncate font-bold text-gray-900">{p.name_en || '(no name)'}</h3>
                 {isHidden(p) && <span className="rounded bg-gray-200 px-1.5 text-xs font-bold text-gray-600">HIDDEN</span>}
               </div>
-              <p className="truncate text-sm text-gray-500">{p.name_hi}</p>
               <p className="text-xs font-semibold uppercase text-brand-700">{p.category}{Number(p.offer) > 0 && ` · ${p.offer}% off`}</p>
               <p className="truncate text-sm text-gray-700">{p.packs}</p>
               <p className="truncate text-sm text-gray-700">{p.prices ? `₹ ${p.prices}` : 'Price on Request'}</p>
@@ -282,8 +281,8 @@ function ProductForm({ product, request, onClose, onSaved }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {field('name_en', 'Name (English) *', { required: true })}
           {field('name_hi', 'Name (Hindi)')}
-          {field('use_en', 'Use (English)')}
-          {field('use_hi', 'Use (Hindi)')}
+          {field('use_en', 'Description (English)')}
+          {field('use_hi', 'Description (Hindi)')}
           <div>
             <label className={label} htmlFor="f-category">Category</label>
             <select id="f-category" className={input} value={data.category} onChange={set('category')}>
@@ -319,15 +318,30 @@ function ProductForm({ product, request, onClose, onSaved }) {
 
 const isOrder = (o) => String(o.Product || '').startsWith('ORDER')
 
+const STATUSES = ['Pending', 'Delivered', 'Return']
+const STATUS_STYLE = {
+  Pending: 'bg-amber-100 text-amber-800',
+  Delivered: 'bg-green-100 text-green-800',
+  Return: 'bg-red-100 text-red-700',
+}
+const orderStatus = (o) => (STATUSES.includes(o.Status) ? o.Status : 'Pending')
+
 function OrdersTab({ request }) {
   const [orders, loading, error, reload] = useList(request, 'orders', 'orders')
   const [kind, setKind] = useState('orders') // orders | enquiries | all
+  const [status, setStatus] = useState('all')
   const [search, setSearch] = useState('')
+  const [saved, setSaved] = useState({}) // sheet row → status changed since the last load
+
+  useEffect(() => setSaved({}), [orders])
+
+  const withStatus = (o) => (saved[o.row] ? { ...o, Status: saved[o.row] } : o)
 
   const q = search.trim().toLowerCase()
-  const shown = (orders || []).filter(
+  const shown = (orders || []).map(withStatus).filter(
     (o) =>
       (kind === 'all' || (kind === 'orders') === isOrder(o)) &&
+      (status === 'all' || orderStatus(o) === status) &&
       (!q || Object.values(o).some((v) => String(v).toLowerCase().includes(q))),
   )
 
@@ -340,18 +354,25 @@ function OrdersTab({ request }) {
           <option value="enquiries">Enquiries</option>
           <option value="all">All</option>
         </select>
+        <select className={`${input} w-auto`} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">Any status</option>
+          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
         <input className={`${input} max-w-xs`} placeholder="Search name, mobile, village…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <ErrorBox error={error} />
       {orders && !shown.length && <p className="text-gray-500">Nothing here yet.</p>}
 
       <div className="grid gap-3 lg:grid-cols-2">
-        {shown.map((o, i) => (
-          <article key={i} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
-            <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
+        {shown.map((o) => (
+          <article key={o.row} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h3 className="font-bold text-gray-900">{o.Name || '(no name)'}</h3>
               <span className="text-sm text-gray-500">{o['Date & Time']}</span>
-              {isOrder(o) && <span className="ml-auto rounded bg-brand-100 px-2 text-xs font-bold text-brand-800">ORDER</span>}
+              <span className="ml-auto flex gap-1">
+                {isOrder(o) && <span className="rounded bg-brand-100 px-2 text-xs font-bold text-brand-800">ORDER</span>}
+                <span className={`rounded px-2 text-xs font-bold ${STATUS_STYLE[orderStatus(o)]}`}>{orderStatus(o)}</span>
+              </span>
             </div>
             <p className="text-sm text-gray-700">
               {o.Mobile && <a className="font-semibold text-brand-700 underline" href={`tel:${o.Mobile}`}>{o.Mobile}</a>}
@@ -360,9 +381,63 @@ function OrdersTab({ request }) {
             {o.Product && <p className="mt-2 whitespace-pre-wrap text-sm text-gray-900">{o.Product}</p>}
             {o.Quantity && <p className="mt-1 text-sm font-bold text-gray-900">{o.Quantity}</p>}
             {o.Message && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{o.Message}</p>}
+            <StatusEditor
+              order={o}
+              request={request}
+              onSaved={(next) => setSaved((m) => ({ ...m, [o.row]: next }))}
+            />
           </article>
         ))}
       </div>
     </>
+  )
+}
+
+function StatusEditor({ order, request, onSaved }) {
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState(orderStatus(order))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  if (!open) {
+    return (
+      <button
+        className={`${btnGhost} mt-3 px-3 py-1 text-sm`}
+        onClick={() => {
+          setValue(orderStatus(order))
+          setError('')
+          setOpen(true)
+        }}
+      >
+        Edit status
+      </button>
+    )
+  }
+
+  const save = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await request('set_status', { row: order.row, status: value })
+      onSaved(value)
+      setOpen(false)
+    } catch (err) {
+      setError(String(err.message || err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <select className={`${input} w-auto py-1`} value={value} onChange={(e) => setValue(e.target.value)} disabled={busy}>
+          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <button className={`${btnPrimary} px-3 py-1 text-sm`} onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        <button className={`${btnGhost} px-3 py-1 text-sm`} onClick={() => setOpen(false)} disabled={busy}>Cancel</button>
+      </div>
+      {error && <p className="mt-2 text-sm font-semibold text-red-600" role="alert">{error}</p>}
+    </div>
   )
 }
