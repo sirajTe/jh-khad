@@ -318,11 +318,14 @@ function ProductForm({ product, request, onClose, onSaved }) {
 
 const isOrder = (o) => String(o.Product || '').startsWith('ORDER')
 
-const STATUSES = ['Pending', 'Delivered', 'Return']
+const STATUSES = ['Pending', 'Picked up', 'In Transit', 'Delivered', 'Return', 'Cancelled']
 const STATUS_STYLE = {
   Pending: 'bg-amber-100 text-amber-800',
+  'Picked up': 'bg-sky-100 text-sky-800',
+  'In Transit': 'bg-indigo-100 text-indigo-800',
   Delivered: 'bg-green-100 text-green-800',
   Return: 'bg-red-100 text-red-700',
+  Cancelled: 'bg-gray-200 text-gray-700',
 }
 const orderStatus = (o) => (STATUSES.includes(o.Status) ? o.Status : 'Pending')
 

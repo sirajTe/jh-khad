@@ -18,7 +18,7 @@ const ADMIN_PASSWORD = 'jh@1234';
 const PRODUCT_COLUMNS = ['id', 'category', 'name_en', 'name_hi', 'use_en', 'use_hi', 'packs', 'prices', 'offer', 'image', 'active'];
 
 const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
-const ORDER_STATUSES = ['Pending', 'Delivered', 'Return'];
+const ORDER_STATUSES = ['Pending', 'Picked up', 'In Transit', 'Delivered', 'Return', 'Cancelled'];
 
 function doPost(e) {
   // Admin panel requests (they send an "action"); enquiries and orders don't.
