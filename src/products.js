@@ -1,34 +1,43 @@
 import { useSyncExternalStore } from 'react'
-import { GOOGLE_SCRIPT_URL, IMAGES, PRODUCTS } from './config'
+import { CATEGORIES, GOOGLE_SCRIPT_URL, IMAGES, PRODUCTS } from './config'
 
-// Products come from the "Products" tab of the Google Sheet, so the shop can
-// change prices without touching code. Until the sheet answers (or if it
-// can't be reached) the site shows the last list it got, or PRODUCTS from
-// config.js on a first visit — so the page is never empty.
+// Products and categories come from the "Products" and "Categories" tabs of
+// the Google Sheet, so the shop can change them without touching code. Until
+// the sheet answers (or if it can't be reached) the site shows the last lists
+// it got, or PRODUCTS / CATEGORIES from config.js on a first visit — so the
+// page is never empty.
 
 const CACHE_KEY = 'products-v1'
-const CATEGORIES = ['fertilizer', 'pesticide', 'seed']
+const CATEGORIES_CACHE_KEY = 'categories-v1'
 
-let products = loadCached() || PRODUCTS
+let store = {
+  products: loadCached(CACHE_KEY) || PRODUCTS,
+  categories: loadCached(CATEGORIES_CACHE_KEY) || CATEGORIES,
+}
 const listeners = new Set()
 
-function loadCached() {
+function loadCached(key) {
   try {
-    const saved = JSON.parse(localStorage.getItem(CACHE_KEY))
+    const saved = JSON.parse(localStorage.getItem(key))
     return Array.isArray(saved) && saved.length ? saved : null
   } catch {
     return null
   }
 }
 
-function setProducts(list) {
-  products = list
-  listeners.forEach((fn) => fn())
+function save(key, list) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(list))
+    localStorage.setItem(key, JSON.stringify(list))
   } catch {
     // storage blocked — the sheet is just fetched again next visit
   }
+}
+
+function setStore(next) {
+  store = next
+  listeners.forEach((fn) => fn())
+  save(CACHE_KEY, next.products)
+  save(CATEGORIES_CACHE_KEY, next.categories)
 }
 
 async function fetchFromSheet() {
@@ -37,9 +46,12 @@ async function fetchFromSheet() {
     const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=products`)
     const data = await res.json()
     if (data.result !== 'ok' || !Array.isArray(data.products)) return
-    const list = data.products.map(fromRow).filter(Boolean)
+    // An older script sends no categories — keep the ones from config.js
+    let categories = (data.categories || []).map(categoryFromRow).filter(Boolean)
+    if (!categories.length) categories = CATEGORIES
+    const list = data.products.map((r) => fromRow(r, categories)).filter(Boolean)
     // An empty tab is more likely a mistake than "sell nothing"
-    if (list.length) setProducts(list)
+    if (list.length) setStore({ products: list, categories })
   } catch (err) {
     console.warn('Could not load products from the Google Sheet; showing saved list.', err)
   }
@@ -47,27 +59,39 @@ async function fetchFromSheet() {
 
 if (typeof window !== 'undefined') fetchFromSheet()
 
-export function useProducts() {
+function useStore() {
   return useSyncExternalStore(
     (fn) => {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
-    () => products,
+    () => store,
   )
 }
+
+export const useProducts = () => useStore().products
+export const useCategories = () => useStore().categories
+
+// The category's name in the given language (its id if it's unknown)
+export function categoryName(categories, id, lang) {
+  const c = categories.find((c) => c.id === id)
+  return c ? c.name[lang] || c.name.en : id
+}
+
+const isHidden = (v) => /^(no|n|false|0|hide)$/i.test(text(v))
 
 const text = (v) => String(v ?? '').trim()
 const splitList = (v) => text(v).split(',').map((s) => s.trim()).filter(Boolean)
 
 // One sheet row → one product, or null if the row can't be used.
 // Mistakes in a row only affect that row, never the whole page.
-function fromRow(r) {
+function fromRow(r, categories) {
   const nameEn = text(r.name_en)
   const category = text(r.category).toLowerCase()
   const packs = splitList(r.packs)
-  if (/^(no|n|false|0|hide)$/i.test(text(r.active))) return null
-  if (!nameEn || !CATEGORIES.includes(category) || !packs.length) {
+  if (isHidden(r.active)) return null
+  const cat = categories.find((c) => c.id === category)
+  if (!nameEn || !cat || !packs.length) {
     console.warn('Skipping product row (needs name_en, category and packs):', r)
     return null
   }
@@ -89,7 +113,20 @@ function fromRow(r) {
     packs,
     prices,
     offer: offer > 0 && offer < 100 ? offer : 0,
-    image: imageUrl(text(r.image)) || IMAGES.categories[category],
+    image: imageUrl(text(r.image)) || cat.image,
+  }
+}
+
+// One row of the Categories tab → one category, or null if it can't be used
+function categoryFromRow(r) {
+  const nameEn = text(r.name_en)
+  const id = text(r.id).toLowerCase() || slug(nameEn)
+  if (isHidden(r.active) || !nameEn || !id) return null
+  return {
+    id,
+    name: { en: nameEn, hi: text(r.name_hi) || nameEn },
+    desc: { en: text(r.desc_en), hi: text(r.desc_hi) || text(r.desc_en) },
+    image: imageUrl(text(r.image)) || IMAGES.categories[id] || IMAGES.categories.default,
   }
 }
 

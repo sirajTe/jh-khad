@@ -84,7 +84,7 @@ export default function App() {
       {header}
       <main>
         <Hero t={t} onBook={() => openBooking()} />
-        <Categories t={t} onSelect={showCategory} />
+        <Categories t={t} lang={lang} onSelect={showCategory} />
         <Products t={t} lang={lang} filter={filter} setFilter={setFilter} cart={cart} />
         <Shops t={t} lang={lang} />
         <WhyUs t={t} />

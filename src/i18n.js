@@ -10,16 +10,6 @@ export const TEXT = {
     heroTitle: 'Genuine Seeds, Fertilizers & Pesticides for Your Farm',
     heroText: 'Quality products and honest advice for maize, makhana, paddy, wheat and vegetables.',
     categoriesTitle: 'Our Categories',
-    categories: {
-      fertilizer: 'Fertilizers',
-      pesticide: 'Pesticides',
-      seed: 'Seeds',
-    },
-    categoryDesc: {
-      fertilizer: 'Urea, DAP, NPK, zinc, boron & more',
-      pesticide: 'Protect crops from insects, disease & weeds',
-      seed: 'High-yield maize, paddy & vegetable seeds',
-    },
     viewProducts: 'View products',
     productsTitle: 'Our Products',
     all: 'All',
@@ -137,16 +127,6 @@ export const TEXT = {
     heroTitle: 'आपके खेत के लिए असली बीज, खाद और कीटनाशक',
     heroText: 'मक्का, मखाना, धान, गेहूं और सब्जियों के लिए अच्छे उत्पाद और सही सलाह।',
     categoriesTitle: 'हमारी श्रेणियाँ',
-    categories: {
-      fertilizer: 'खाद / उर्वरक',
-      pesticide: 'कीटनाशक',
-      seed: 'बीज',
-    },
-    categoryDesc: {
-      fertilizer: 'यूरिया, डीएपी, एनपीके, जिंक, बोरॉन आदि',
-      pesticide: 'कीट, रोग और खरपतवार से फसल की रक्षा',
-      seed: 'अधिक उपज वाले मक्का, धान और सब्जी बीज',
-    },
     viewProducts: 'उत्पाद देखें',
     productsTitle: 'हमारे उत्पाद',
     all: 'सभी',

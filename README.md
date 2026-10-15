@@ -93,7 +93,7 @@ a minute — no need to publish the website again.
 | Column | What to write | Example |
 |---|---|---|
 | `id` | Short unique code, never change it once used (carts use it). Blank = made from the name | `maize-seeds` |
-| `category` | `fertilizer`, `pesticide` or `seed` | `seed` |
+| `category` | The `id` of a category from the **Categories** tab | `seed` |
 | `name_en` / `name_hi` | Product name in English / Hindi | `Hybrid Maize Seeds` |
 | `use_en` / `use_hi` | One line about what it is for | `High-yield hybrid for maize` |
 | `packs` | Pack sizes, separated by commas | `1 kg, 4 kg, 5 kg` |
@@ -110,6 +110,26 @@ Good to know:
 - A row with a missing name, pack or a wrong category is skipped; the rest
   of the products still show.
 - Rows show on the website in the same order as in the sheet.
+
+## Add or change categories
+
+Categories come from the **Categories** tab of the JH sheet. The script
+creates that tab by itself the first time it runs, already filled with the
+current categories (Fertilizers, Micronutrients, Pesticides, Seeds). Add a
+row there (or use **Categories → + Add category** in the admin panel on the
+`admin-panel` branch). Then pick the new category for its products.
+
+| Column | What to write | Example |
+|---|---|---|
+| `id` | Short unique code. Products use it in their `category` column, so never change it once used | `micronutrient` |
+| `name_en` / `name_hi` | Category name in English / Hindi | `Micronutrients` |
+| `desc_en` / `desc_hi` | One line shown under the name | `Zinc, boron, sulphur & more` |
+| `image` | Photo link. Blank = the built-in photo (a farm photo for new categories) | `https://...` |
+| `active` | `no` to hide the category **and its products**, otherwise `yes` or blank | `yes` |
+
+Categories show on the website in the same order as the rows in the tab.
+`CATEGORIES` in `src/config.js` is only the backup list, used until the sheet
+loads. `google-apps-script/categories.xlsx` has the same rows, ready to import.
 
 ## Put the website online (free)
 
