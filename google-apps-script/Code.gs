@@ -26,7 +26,7 @@ const DEFAULT_CATEGORIES = [
   ['seed', 'Seeds', 'बीज', 'High-yield maize, paddy & vegetable seeds', 'अधिक उपज वाले मक्का, धान और सब्जी बीज', '', 'yes'],
 ];
 
-const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language', 'PIN Code'];
+const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Address', 'Product', 'Quantity', 'Message', 'Language', 'PIN Code'];
 const ORDER_STATUSES = ['Pending', 'Picked up', 'In Transit', 'Delivered', 'Return', 'Cancelled'];
 
 function doPost(e) {
@@ -50,7 +50,7 @@ function doPost(e) {
       'Date & Time': new Date(),
       'Name': clean_(p.name),
       'Mobile': "'" + clean_(p.mobile), // leading ' keeps the number as text
-      'Village': clean_(p.village),
+      'Address': clean_(p.village), // the form field is still called "village"
       'Product': clean_(p.product),
       'Quantity': clean_(p.quantity),
       'Message': clean_(p.message),
@@ -177,6 +177,12 @@ function productsSheet_() {
 // Header row of the JH tab, adding any of HEADERS that are missing at the end
 function headers_(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  // The old "Village" column is now "Address" — rename it in place, keeping its data
+  const village = headers.indexOf('Village');
+  if (village !== -1 && headers.indexOf('Address') === -1) {
+    headers[village] = 'Address';
+    sheet.getRange(1, village + 1).setValue('Address');
+  }
   HEADERS.forEach(function (h) {
     if (headers.indexOf(h) !== -1) return;
     headers.push(h);
@@ -196,17 +202,6 @@ function categoriesSheet_() {
     sheet.setFrozenRows(1);
   }
   return sheet;
-}
-
-// Header row of the JH tab, adding any of HEADERS that are missing at the end
-function headers_(sheet) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
-  HEADERS.forEach(function (h) {
-    if (headers.indexOf(h) !== -1) return;
-    headers.push(h);
-    sheet.getRange(1, headers.length).setValue(h).setFontWeight('bold').setBackground('#dcfce7');
-  });
-  return headers;
 }
 
 // Header names as used by the website (lower case, spaces → _)
@@ -285,6 +280,7 @@ function orders_() {
     if (!row.some(function (c) { return String(c).trim(); })) return;
     const obj = { row: r + 2 };
     headers.forEach(function (h, i) { if (h) obj[h] = row[i]; });
+    if ('Address' in obj && !('Village' in obj)) obj['Village'] = obj['Address']; // older admin panels read "Village"
     list.push(obj);
   });
   return list.reverse();
@@ -322,17 +318,6 @@ function getSheet_() {
     sheet.setFrozenRows(1);
   }
   return sheet;
-}
-
-// Header row of the JH tab, adding any of HEADERS that are missing at the end
-function headers_(sheet) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
-  HEADERS.forEach(function (h) {
-    if (headers.indexOf(h) !== -1) return;
-    headers.push(h);
-    sheet.getRange(1, headers.length).setValue(h).setFontWeight('bold').setBackground('#dcfce7');
-  });
-  return headers;
 }
 
 // Trim, limit length, and stop text being treated as a spreadsheet formula.
