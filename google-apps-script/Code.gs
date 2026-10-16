@@ -26,7 +26,7 @@ const DEFAULT_CATEGORIES = [
   ['seed', 'Seeds', 'बीज', 'High-yield maize, paddy & vegetable seeds', 'अधिक उपज वाले मक्का, धान और सब्जी बीज', '', 'yes'],
 ];
 
-const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language'];
+const HEADERS = ['Date & Time', 'Name', 'Mobile', 'Village', 'Product', 'Quantity', 'Message', 'Language', 'PIN Code'];
 const ORDER_STATUSES = ['Pending', 'Picked up', 'In Transit', 'Delivered', 'Return', 'Cancelled'];
 
 function doPost(e) {
@@ -46,23 +46,27 @@ function doPost(e) {
     const p = (e && e.parameter) || {};
     const sheet = getSheet_();
 
-    const row = [
-      new Date(),
-      clean_(p.name),
-      "'" + clean_(p.mobile), // leading ' keeps the number as text
-      clean_(p.village),
-      clean_(p.product),
-      clean_(p.quantity),
-      clean_(p.message),
-      clean_(p.language),
-    ];
-    sheet.appendRow(row);
+    const values = {
+      'Date & Time': new Date(),
+      'Name': clean_(p.name),
+      'Mobile': "'" + clean_(p.mobile), // leading ' keeps the number as text
+      'Village': clean_(p.village),
+      'Product': clean_(p.product),
+      'Quantity': clean_(p.quantity),
+      'Message': clean_(p.message),
+      'Language': clean_(p.language),
+      'PIN Code': p.pincode ? "'" + clean_(p.pincode) : '',
+    };
+    // Written by column name, so columns added later (PIN Code, Status) stay in place
+    const headers = headers_(sheet);
+    sheet.appendRow(headers.map(function (h) { return h in values ? values[h] : ''; }));
 
     if (NOTIFY_EMAIL) {
       MailApp.sendEmail(
         NOTIFY_EMAIL,
-        'New enquiry: ' + (row[4] || 'General') + ' — ' + row[1],
-        HEADERS.slice(1).map(function (h, i) { return h + ': ' + row[i + 1]; }).join('\n')
+        'New enquiry: ' + (values['Product'] || 'General') + ' — ' + values['Name'],
+        HEADERS.slice(1).filter(function (h) { return values[h]; })
+          .map(function (h) { return h + ': ' + values[h]; }).join('\n')
       );
     }
 
@@ -170,6 +174,17 @@ function productsSheet_() {
   return sheet;
 }
 
+// Header row of the JH tab, adding any of HEADERS that are missing at the end
+function headers_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  HEADERS.forEach(function (h) {
+    if (headers.indexOf(h) !== -1) return;
+    headers.push(h);
+    sheet.getRange(1, headers.length).setValue(h).setFontWeight('bold').setBackground('#dcfce7');
+  });
+  return headers;
+}
+
 // A new Categories tab starts with the shop's current categories
 function categoriesSheet_() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -181,6 +196,17 @@ function categoriesSheet_() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+// Header row of the JH tab, adding any of HEADERS that are missing at the end
+function headers_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  HEADERS.forEach(function (h) {
+    if (headers.indexOf(h) !== -1) return;
+    headers.push(h);
+    sheet.getRange(1, headers.length).setValue(h).setFontWeight('bold').setBackground('#dcfce7');
+  });
+  return headers;
 }
 
 // Header names as used by the website (lower case, spaces → _)
@@ -296,6 +322,17 @@ function getSheet_() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+// Header row of the JH tab, adding any of HEADERS that are missing at the end
+function headers_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  HEADERS.forEach(function (h) {
+    if (headers.indexOf(h) !== -1) return;
+    headers.push(h);
+    sheet.getRange(1, headers.length).setValue(h).setFontWeight('bold').setBackground('#dcfce7');
+  });
+  return headers;
 }
 
 // Trim, limit length, and stop text being treated as a spreadsheet formula.

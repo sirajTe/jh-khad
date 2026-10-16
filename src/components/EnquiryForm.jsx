@@ -1,10 +1,33 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useProducts } from '../products'
-import { contactErrors, sendToSheet, telLink, whatsappLink } from '../utils'
+import { sendToSheet, telLink, whatsappLink } from '../utils'
 import { CheckIcon } from './Icons'
 import Section from './Section'
 
-const EMPTY = { name: '', mobile: '', village: '', product: '', quantity: '', message: '' }
+const EMPTY = { name: '', mobile: '', village: '', pincode: '', product: '', quantity: '', message: '' }
+const FIELDS = ['name', 'mobile', 'village', 'pincode', 'product', 'quantity'] // form order, for focusing the first error
+
+// Returns the error message for one field, or undefined if it is fine
+function fieldError(name, value, f) {
+  const v = value.trim()
+  switch (name) {
+    case 'name':
+      if (!v) return f.errName
+      if (v.length < 2 || !/^[\p{L}\p{M}][\p{L}\p{M} .']*$/u.test(v)) return f.errNameInvalid
+      return
+    case 'mobile':
+      return /^[6-9]\d{9}$/.test(v) ? undefined : f.errMobile
+    case 'village':
+      if (!v) return f.errAddress
+      return v.length < 5 ? f.errAddressShort : undefined
+    case 'pincode':
+      return /^[1-9]\d{5}$/.test(v) ? undefined : f.errPincode
+    case 'product':
+      return v.length < 2 ? f.errProduct : undefined
+    case 'quantity':
+      return /[1-9]/.test(v) ? undefined : f.errQuantity
+  }
+}
 
 export default function EnquiryForm({ t, lang }) {
   return (
@@ -40,14 +63,29 @@ export function EnquiryFields({ t, lang, selectedProduct }) {
 
   const update = (e) => {
     const { name, value } = e.target
-    setData((d) => ({ ...d, [name]: name === 'mobile' ? value.replace(/\D/g, '').slice(0, 10) : value }))
-    setErrors((er) => ({ ...er, [name]: undefined }))
+    const digits = { mobile: 10, pincode: 6 }[name]
+    const next = digits ? value.replace(/\D/g, '').slice(0, digits) : value
+    setData((d) => ({ ...d, [name]: next }))
+    // once a field shows an error, re-check it as the user types
+    setErrors((er) => (er[name] ? { ...er, [name]: fieldError(name, next, f) } : er))
+  }
+
+  // check a field when the user leaves it (skipped if left empty, so tabbing past doesn't nag)
+  const blur = (e) => {
+    const { name, value } = e.target
+    if (FIELDS.includes(name) && value.trim()) setErrors((er) => ({ ...er, [name]: fieldError(name, value, f) }))
   }
 
   const validate = () => {
-    const er = contactErrors(data, f)
+    const er = {}
+    FIELDS.forEach((k) => {
+      const msg = fieldError(k, data[k], f)
+      if (msg) er[k] = msg
+    })
     setErrors(er)
-    return Object.keys(er).length === 0
+    const first = FIELDS.find((k) => er[k])
+    if (first) document.getElementById(`${uid}-${first}`)?.focus()
+    return !first
   }
 
   const submit = async (e) => {
@@ -58,13 +96,20 @@ export function EnquiryFields({ t, lang, selectedProduct }) {
     try {
       const result = await sendToSheet({ ...data, language: lang })
       setStatus(result)
-      if (result === 'done') setData(EMPTY)
+      if (result === 'done') {
+        setData(EMPTY)
+        setErrors({})
+      }
     } catch {
       setStatus('error')
     }
   }
 
-  const field = 'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base outline-none focus:border-brand-600'
+  const base = 'w-full rounded-xl border-2 bg-white px-4 py-3 text-base outline-none'
+  const field = `${base} border-gray-200 focus:border-brand-600`
+  const cls = (k) => (errors[k] ? `${base} border-red-500 focus:border-red-600` : field)
+  const err = (k) => ({ onBlur: blur, 'aria-invalid': !!errors[k], 'aria-describedby': errors[k] ? `${uid}-${k}-err` : undefined })
+  const errText = (k) => errors[k] && <p id={`${uid}-${k}-err`} className="mt-1 text-sm text-red-600">{errors[k]}</p>
   const label = 'mb-1 block text-sm font-bold text-gray-700'
 
   return status === 'done' ? (
@@ -81,33 +126,40 @@ export function EnquiryFields({ t, lang, selectedProduct }) {
     <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
       <div>
         <label htmlFor={`${uid}-name`} className={label}>{f.name} *</label>
-        <input ref={nameRef} id={`${uid}-name`} name="name" value={data.name} onChange={update} autoComplete="name" className={field} />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+        <input ref={nameRef} id={`${uid}-name`} name="name" value={data.name} onChange={update} autoComplete="name" className={cls('name')} {...err('name')} />
+        {errText('name')}
       </div>
       <div>
         <label htmlFor={`${uid}-mobile`} className={label}>{f.mobile} *</label>
-        <input id={`${uid}-mobile`} name="mobile" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} value={data.mobile} onChange={update} placeholder="98XXXXXXXX" className={field} />
-        {errors.mobile && <p className="mt-1 text-sm text-red-600">{errors.mobile}</p>}
+        <input id={`${uid}-mobile`} name="mobile" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} value={data.mobile} onChange={update} placeholder="98XXXXXXXX" className={cls('mobile')} {...err('mobile')} />
+        {errText('mobile')}
       </div>
       <div>
-        <label htmlFor={`${uid}-village`} className={label}>{f.village} *</label>
-        <input id={`${uid}-village`} name="village" value={data.village} onChange={update} className={field} />
-        {errors.village && <p className="mt-1 text-sm text-red-600">{errors.village}</p>}
+        <label htmlFor={`${uid}-village`} className={label}>{f.address} *</label>
+        <input id={`${uid}-village`} name="village" value={data.village} onChange={update} autoComplete="street-address" placeholder={f.addressPh} className={cls('village')} {...err('village')} />
+        {errText('village')}
       </div>
       <div>
-        <label htmlFor={`${uid}-product`} className={label}>{f.product}</label>
-        <input id={`${uid}-product`} name="product" list={`${uid}-products`} value={data.product} onChange={update} placeholder={f.productPh} className={field} />
+        <label htmlFor={`${uid}-pincode`} className={label}>{f.pincode} *</label>
+        <input id={`${uid}-pincode`} name="pincode" type="tel" inputMode="numeric" autoComplete="postal-code" maxLength={6} value={data.pincode} onChange={update} placeholder="854317" className={cls('pincode')} {...err('pincode')} />
+        {errText('pincode')}
+      </div>
+      <div>
+        <label htmlFor={`${uid}-product`} className={label}>{f.product} *</label>
+        <input id={`${uid}-product`} name="product" list={`${uid}-products`} value={data.product} onChange={update} placeholder={f.productPh} className={cls('product')} {...err('product')} />
         <datalist id={`${uid}-products`}>
           {products.map((p) => <option key={p.id} value={p.name.en} />)}
         </datalist>
+        {errText('product')}
+      </div>
+      <div>
+        <label htmlFor={`${uid}-quantity`} className={label}>{f.quantity} *</label>
+        <input id={`${uid}-quantity`} name="quantity" value={data.quantity} onChange={update} placeholder={f.quantityPh} className={cls('quantity')} {...err('quantity')} />
+        {errText('quantity')}
       </div>
       <div className="sm:col-span-2">
-        <label htmlFor={`${uid}-quantity`} className={label}>{f.quantity}</label>
-        <input id={`${uid}-quantity`} name="quantity" value={data.quantity} onChange={update} placeholder={f.quantityPh} className={field} />
-      </div>
-      <div className="sm:col-span-2">
-        <label htmlFor={`${uid}-message`} className={label}>{f.message}</label>
-        <textarea id={`${uid}-message`} name="message" rows={3} value={data.message} onChange={update} placeholder={f.messagePh} className={field} />
+        <label htmlFor={`${uid}-message`} className={label}>{f.remark}</label>
+        <textarea id={`${uid}-message`} name="message" rows={3} maxLength={500} value={data.message} onChange={update} placeholder={f.messagePh} className={field} />
       </div>
 
       {(status === 'error' || status === 'setup') && (

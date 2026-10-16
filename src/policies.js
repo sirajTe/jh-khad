@@ -79,7 +79,7 @@ export const POLICIES = [
       {
         h: 'Information we collect',
         list: [
-          'Details you type into our enquiry / order form: name, mobile number, village, product, quantity and message.',
+          'Details you type into our enquiry / order form: name, mobile number, address / village, PIN code, product, quantity and remark.',
           'Messages and call details when you contact us by phone or WhatsApp.',
           'Payment details such as amount and payment status when you pay online. Card, UPI and bank details are handled only by our payment partner (Razorpay), not by us.',
           'Your language choice (English / Hindi), saved only in your own browser.',
