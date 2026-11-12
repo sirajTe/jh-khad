@@ -4,7 +4,7 @@ Simple, fast, mobile-friendly catalogue for the shop. Customers can add
 products to a cart and order, or contact you by **Call**, **WhatsApp** or the
 **Enquiry form**.
 
-Built with React + JavaScript + Tailwind CSS (Vite).
+Built with React + TypeScript + Tailwind CSS (Vite).
 
 ## Run it on your computer
 
@@ -18,10 +18,15 @@ Built with React + JavaScript + Tailwind CSS (Vite).
 
 3. Open the link it shows (usually http://localhost:5173).
 
+To check types:
+```bash
+npm run typecheck
+```
+
 ## Edit products, photos and shop details
 
 Products are changed in the **Google Sheet** (see below). Shop details and
-photos are in **one file: `src/config.js`**
+photos are in **one file: `src/config.ts`**
 
 - `GOOGLE_SCRIPT_URL` — link for the enquiry form (see below)
 - `SHOP` — phone, WhatsApp, email, address
@@ -31,10 +36,10 @@ photos are in **one file: `src/config.js`**
   the sheet — see "Change products from the Google Sheet" below.
 
 To use your own photos: put them in the `public` folder (e.g. `public/zinc.jpg`)
-and write `'/zinc.jpg'` in `config.js`. Keep photos small (under ~150 KB,
+and write `'/zinc.jpg'` in `config.ts`. Keep photos small (under ~150 KB,
 about 800 px wide) so the site loads fast on village internet.
 
-All website text (English and Hindi) is in `src/i18n.js`.
+All website text (English and Hindi) is in `src/translations/index.ts`.
 
 ## Connect the enquiry form to Google Sheets
 
@@ -52,10 +57,10 @@ All website text (English and Hindi) is in `src/i18n.js`.
    → **Advanced** → **Go to (project name) (unsafe)** → **Allow**.
    (This is normal for your own scripts.)
 6. Copy the **Web app URL** (ends with `/exec`).
-7. Open `src/config.js` and replace `'GOOGLE_SCRIPT_URL'` with that link:
+7. Open `src/config.ts` and replace `'GOOGLE_SCRIPT_URL'` with that link:
 
-   ```js
-   export const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/XXXX/exec'
+   ```ts
+   export const GOOGLE_SCRIPT_URL: string = 'https://script.google.com/macros/s/XXXX/exec'
    ```
 
 8. Submit a test enquiry on the website. A new row appears in the
@@ -81,12 +86,12 @@ a minute — no need to publish the website again.
    "If you change the script later").
 2. In the JH sheet, add a new tab named exactly **Products**.
 3. In that tab: **File → Import → Upload** → choose
-   `google-apps-script/products.csv` → Import location: **Replace current
+   `integrations/google-apps-script/products.csv` → Import location: **Replace current
    sheet** → **Import data**. This fills in all current products.
 4. Open the Web app URL with `?action=products` at the end in your browser —
    you should see the product list.
 
-(To make a fresh CSV from `src/config.js`, run `npm run products:csv`.)
+(To make a fresh CSV from `src/config.ts`, run `npm run products:csv`.)
 
 ### Columns
 
@@ -128,8 +133,8 @@ row there (or use **Categories → + Add category** in the admin panel on the
 | `active` | `no` to hide the category **and its products**, otherwise `yes` or blank | `yes` |
 
 Categories show on the website in the same order as the rows in the tab.
-`CATEGORIES` in `src/config.js` is only the backup list, used until the sheet
-loads. `google-apps-script/categories.xlsx` has the same rows, ready to import.
+`CATEGORIES` in `src/config.ts` is only the backup list, used until the sheet
+loads. `integrations/google-apps-script/categories.xlsx` has the same rows, ready to import.
 
 ## Put the website online (free)
 

@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "products:csv": "node scripts/products-csv.js"
+    "typecheck": "tsc --noEmit",
+    "products:csv": "tsx scripts/products-csv.ts"
   },
   "dependencies": {
     "qrcode": "1.5.4",
@@ -16,8 +17,13 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.11",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "4.3.4",
     "tailwindcss": "4.1.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
     "vite": "5.4.11"
   }
 }
