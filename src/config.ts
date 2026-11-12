@@ -4,14 +4,7 @@
 // =====================================================================
 import type { Category, Product, Shop } from '@/types'
 
-// 1) GOOGLE SHEET LINK
-// Paste your Google Apps Script "Web app URL" here (see README.md).
-// Enquiries go to the "JH" sheet → "JH" tab:
-// https://docs.google.com/spreadsheets/d/1ZRbLBVXGWYTAsCBd2No4DEbjVYKq4bIWxt_MswE0Mrc/edit
-export const GOOGLE_SCRIPT_URL: string =
-  'https://script.google.com/macros/s/AKfycbzceUGTLoKBkvZTjfZ0Tl3MnbwXP4pEO3RarWNeItmKpc4wIA_YDQx6MiPsMEYIUi-I/exec'
-
-// 2) SHOP DETAILS
+// 1) SHOP DETAILS
 export const SHOP = {
   name: 'JH AGRO AGENCY',
   phone: '+917477445056',
@@ -25,7 +18,7 @@ export const SHOP = {
   mapQuery: 'Karanpur, Barsoi, Katihar, Bihar 854317',
 } as const
 
-// 3) PHOTOS — replace any link with your own photo link
+// 2) PHOTOS — replace any link with your own photo link
 //    (or put a file in the "public" folder and use '/my-photo.jpg').
 //    Unsplash links are resized with ?w=...&q=... to keep them small.
 const u = (id: string, w = 600) =>
@@ -88,9 +81,7 @@ export const IMAGES = {
   ],
 } as const
 
-// 4) CATEGORIES — the backup list, shown only until the Google Sheet loads.
-//    Day-to-day, categories are added and changed in the "Categories" tab
-//    of the sheet (or the admin panel).
+// 3) CATEGORIES — all product categories.
 export const CATEGORIES: Category[] = [
   {
     id: 'fertilizer',
@@ -118,8 +109,7 @@ export const CATEGORIES: Category[] = [
   },
 ]
 
-// 5) PRODUCTS — the backup product list (see "Change products from the
-//    Google Sheet" in README.md). category must be an id from CATEGORIES.
+// 4) PRODUCTS — all products available in the shop. category must be an id from CATEGORIES.
 //    prices are in rupees, one for each pack size, in the same order.
 //    Remove the prices line to show "Price on Request" instead.
 //    offer is the % discount on those prices (remove it or set 0 for no offer).
@@ -384,7 +374,7 @@ export const PRODUCTS: Product[] = [
   },
 ]
 
-// 6) SHOPS / BRANCHES — shown in the "Our Shops" section.
+// 5) SHOPS / BRANCHES — shown in the "Our Shops" section.
 //    The first shop is the main one. Add, remove or edit shops here.
 //    mapQuery is what Google Maps searches for to give directions.
 export const SHOPS: Shop[] = [
