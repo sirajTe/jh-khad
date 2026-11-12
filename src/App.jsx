@@ -13,12 +13,11 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import FloatingButtons from './components/FloatingButtons'
 import PolicyPage from './components/PolicyPage'
+import ProductPage from './components/ProductPage'
 import { findPolicy } from './policies'
+import { productIdFromPath } from './products'
 import { cartCount, useCart } from './cart'
 import { CartBar, CartPanel } from './components/Cart'
-
-// /terms, /privacy, /refund, /shipping show a policy page instead of the home page
-const policy = findPolicy(window.location.pathname)
 
 function getSavedLang() {
   try {
@@ -66,12 +65,26 @@ export default function App() {
     </>
   )
   const raised = cart.items.length > 0 // floating buttons move up above the cart bar
+  const policy = findPolicy(window.location.pathname)
+  const productId = productIdFromPath(window.location.pathname)
 
   if (policy) {
     return (
       <>
         {header}
         <PolicyPage t={t} lang={lang} policy={policy} />
+        <Footer t={t} lang={lang} />
+        <FloatingButtons t={t} raised={raised} />
+        {cartUi}
+      </>
+    )
+  }
+
+  if (productId) {
+    return (
+      <>
+        {header}
+        <ProductPage t={t} lang={lang} productId={productId} cart={cart} />
         <Footer t={t} lang={lang} />
         <FloatingButtons t={t} raised={raised} />
         {cartUi}

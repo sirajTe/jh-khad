@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { SHOP } from '../config'
 import { cartCount, cartLines, newOrderId } from '../cart'
-import { useProducts } from '../products'
+import { productPath, useProducts } from '../products'
 import { contactErrors, formatRupees, sendToSheet, telLink, whatsappTextLink } from '../utils'
 import { AddButton } from './Products'
 import { CartIcon, CheckIcon, CloseIcon } from './Icons'
@@ -193,9 +193,15 @@ export function CartPanel({ t, lang, cart, open, onClose }) {
                       const name = l.product.name[lang] || l.product.name.en
                       return (
                         <li key={`${l.id}|${l.pack}`} className="flex items-center gap-3 p-3">
-                          <LazyImg src={l.product.image} alt="" className="h-14 w-14 shrink-0 rounded-lg" />
+                          <a href={productPath(l.id)} onClick={() => ref.current.close()} className="shrink-0">
+                            <LazyImg src={l.product.image} alt="" className="h-14 w-14 rounded-lg" />
+                          </a>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-bold text-brand-900">{name}</p>
+                            <p className="truncate font-bold text-brand-900">
+                              <a href={productPath(l.id)} onClick={() => ref.current.close()} className="hover:underline">
+                                {name}
+                              </a>
+                            </p>
                             <p className="text-sm text-gray-500">{l.pack}</p>
                             <p className="text-sm font-extrabold text-brand-900">
                               {l.price == null ? <span className="text-gold-600">{t.priceOnRequest}</span> : formatRupees(l.lineTotal)}

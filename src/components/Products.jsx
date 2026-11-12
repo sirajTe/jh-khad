@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { categoryName, useCategories, useProducts } from '../products'
+import { categoryName, productPath, useCategories, useProducts } from '../products'
 import { formatRupees, offerPrice } from '../utils'
 import Section, { LazyImg } from './Section'
 
@@ -41,9 +41,10 @@ export default function Products({ t, lang, filter, setFilter, cart }) {
   )
 }
 
-function ProductCard({ p, t, lang, cart, category }) {
+export function ProductCard({ p, t, lang, cart, category }) {
   const name = p.name[lang] || p.name.en
   const use = p.use[lang] || p.use.en
+  const href = productPath(p.id)
   const [picked, setPackIdx] = useState(0)
   const packIdx = picked < p.packs.length ? picked : 0 // packs can shrink when the sheet loads
 
@@ -56,7 +57,7 @@ function ProductCard({ p, t, lang, cart, category }) {
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
-      <div className="relative">
+      <a href={href} className="relative block">
         <LazyImg src={p.image} alt={name} className="aspect-[4/3] w-full" />
         <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-bold text-brand-800">
           {category}
@@ -66,9 +67,11 @@ function ProductCard({ p, t, lang, cart, category }) {
             {offer}% {t.off}
           </span>
         )}
-      </div>
+      </a>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="text-lg font-bold leading-snug text-brand-900">{name}</h3>
+        <h3 className="text-lg font-bold leading-snug text-brand-900">
+          <a href={href} className="hover:underline">{name}</a>
+        </h3>
         <p className="mt-1 text-sm text-gray-600">{use}</p>
 
         <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label={t.packSizes}>
@@ -101,6 +104,9 @@ function ProductCard({ p, t, lang, cart, category }) {
           )}
           <AddButton t={t} qty={inCart} label={name} onChange={(q) => (inCart ? cart.setQty(p.id, pack, q) : cart.add(p.id, pack, q))} />
         </div>
+        <a href={href} className="mt-3 text-sm font-bold text-brand-700 hover:underline">
+          {t.viewDetails} ›
+        </a>
       </div>
     </article>
   )

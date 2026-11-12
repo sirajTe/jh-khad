@@ -72,6 +72,21 @@ function useStore() {
 export const useProducts = () => useStore().products
 export const useCategories = () => useStore().categories
 
+export function productPath(id) {
+  return `/product/${encodeURIComponent(id)}`
+}
+
+export function productIdFromPath(pathname) {
+  const path = (pathname || '').replace(/\/+$/, '') || '/'
+  const m = path.match(/^\/product\/([^/]+)$/)
+  if (!m) return null
+  try {
+    return decodeURIComponent(m[1])
+  } catch {
+    return m[1]
+  }
+}
+
 // The category's name in the given language (its id if it's unknown)
 export function categoryName(categories, id, lang) {
   const c = categories.find((c) => c.id === id)

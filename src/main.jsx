@@ -1,12 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import { findPolicy } from './policies'
+import { productIdFromPath } from './products'
 import './index.css'
 
-// This is a one-page site: if it was opened at any other path
-// (e.g. /app/login), tidy the address bar back to the home page.
+// Unknown paths (e.g. /app/login) are tidied back to home. Policy pages and
+// product details keep their address so they can be opened and shared.
 const home = import.meta.env.BASE_URL
-if (window.location.pathname !== home && window.location.pathname !== home + 'index.html') {
+const path = window.location.pathname
+const keep =
+  path === home || path === home + 'index.html' || findPolicy(path) || productIdFromPath(path)
+if (!keep) {
   window.history.replaceState(null, '', home + window.location.search + window.location.hash)
 }
 
